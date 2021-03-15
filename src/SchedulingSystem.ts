@@ -1,16 +1,26 @@
 const fs = require('fs');
 const util = require('util');
 const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
+const path = require('path');
 
-interface SchedulingDataI {}
+const MINUTE = 60*1000;
+const STORAGE_PATH = path.join(__dirname, '../schedulingData.json');
+
+interface SchedulingDataI {
+    [key: string]: {date: string, duration: number, place: number[]}
+}
+
+// duration HOURS
+
 interface ValidReserveI {date: Date, place:number[], duration:number}
 
 class SchedulingSystem {
     private schedulingData: SchedulingDataI;
 
     static async create() {
-        const data:string = await readFile('../schedulingData.json');
-        const schedulingData:SchedulingDataI = JSON.parse(data);
+        const data:string = await readFile(STORAGE_PATH);
+        const schedulingData:SchedulingDataI = data.length ? JSON.parse(data) : {};
         return new SchedulingSystem(schedulingData)
     }
 
@@ -19,23 +29,25 @@ class SchedulingSystem {
     }
 
     async reserve(date : any, place: any, duration: any = 1) {
+        console.log(date , place, duration);
+
         const isDateValid = this.isDateValid(date);
         const placeValid = this.returnPlaceValid(place);
-        const durationValid = this.returnDurationValid(place);
-
+        const durationValid = this.returnDurationValid(duration);
+        console.log('why&!&!& ', isDateValid ,placeValid ,durationValid)
         if (!isDateValid || !placeValid || !durationValid) {
             return {error: 'you provide incorrect data'};
         }
-        const dateValid = this.returnDateValid(date);
+        const dateValid = this.returnDate(date);
 
         const reserveData = {date: dateValid, place: placeValid, duration: durationValid};
 
-        const isPlaceFree = this.isPlaceFree(reserveData);
-        if (!isPlaceFree) {
+        const isFree = this.isPlaceFree(reserveData);
+        if (!isFree) {
             return "this Place isn't free for this date";
         }
-        const placeId = await this.addPlaceAndWriteToFile(reserveData);
-        return placeId;
+
+        return await this.addPlaceAndWriteToFile(reserveData);
     }
 
     async clear(id: any) {
@@ -47,8 +59,7 @@ class SchedulingSystem {
             return {error: 'incorrect id'}
         }
 
-        const deleteResultStatus = await this.deletePlaceAndWriteToFile(validId);
-        return deleteResultStatus; // 'no such place' || 'success'
+        return await this.deletePlaceAndWriteToFile(validId);
     }
 
     status(date: any) {
@@ -58,53 +69,130 @@ class SchedulingSystem {
             if (!this.isDateValid(date)) {
                 return {error: 'invalid date'}
             }
-            dateValid = this.returnDateValid(date);
+            dateValid = this.returnDate(date);
         } else {
             dateValid = new Date();
         }
 
-        const status = this.getStatus(dateValid);
-        return status;
-
+        return this.getStatus(dateValid.toISOString());
     }
 
-
     private async addPlaceAndWriteToFile(data:ValidReserveI) {
-        const id = String(123123);
+        const {date, place, duration} = data;
+        const id = this.randomId();
+        this.schedulingData[id] = {date: date.toISOString(), place, duration};
+
+        try {
+            await writeFile(STORAGE_PATH, JSON.stringify(this.schedulingData));
+        } catch (e) {
+            console.error(e)
+        }
+
         return id;
     }
 
     private async deletePlaceAndWriteToFile(id: string) {
-        return '';
+        if (this.schedulingData[id]) {
+            delete this.schedulingData[id];
+            try {
+                await writeFile(STORAGE_PATH, JSON.stringify(this.schedulingData));
+            } catch (e) {
+                console.error(e)
+            }
+
+            return 'success';
+        }
+
+        return 'no such id';
     }
 
-    private getStatus(date: Date) {
-        return {}
+    private getStatus(statusDate: string) {
+        const status = [];
+        for (const {date, place} of Object.values(this.schedulingData)) {
+            if (statusDate === date) {
+                status.push(place);
+            }
+        }
+
+        return status;
     }
 
     private isPlaceFree(data:ValidReserveI) {
+        // new           -____-
+        //cyrrent -____-
+
+        // new   -____-
+        //cyrrent       -______-
+
+        for (const {date, duration, place} of Object.values(this.schedulingData)) {
+            const isPlace = JSON.stringify(place) === JSON.stringify(data.place);
+            if (isPlace) {
+                const existentStart = this.returnDate(date).getTime();
+                const existentEnd = this.returnDate(date).getTime()  + duration * MINUTE;
+                const newStart = data.date.getTime();
+                const newEnd = data.date.getTime()  + duration * MINUTE;
+
+                const newStartEarlierThanExistent
+                    = existentStart > newStart;
+                const newFinishEarlierThanExistent
+                    = existentEnd > newEnd;
+
+                const newStartLaterThanExistent
+                    = existentStart < newStart;
+                const newFinishLaterThanExistent
+                    = existentEnd < newEnd;
+                const isFree = (newStartEarlierThanExistent && newFinishEarlierThanExistent)
+                    || (newStartLaterThanExistent && newFinishLaterThanExistent);
+
+                if (!isFree) {
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 
+    //validation
     private isDateValid(date: any) {
+        if (typeof date !== 'string' ){
+            return false;
+        }
+
+        //2021-10-04T12:13
+        //for simplicity
+        if (date.length !== 'yyyy-mm-ddThh:mm'.length) {
+            return false;
+        }
+
         return true
     }
 
-    private returnDateValid(date: any) {
-        return new Date();
+    private returnDate(date: string) {
+        // date.toISOString()
+        return new Date(Date.parse(date));
     }
 
     private returnPlaceValid(place: any) {
-        return [1,2,3] || false
+        if (typeof place !== 'string' || place.length !== 3){
+            return false;
+        }
+
+        return place.split("").map(i => Number(i));
     }
 
     private returnDurationValid(duration: any) {
-        return 2 || false
+        return Number(duration);
     }
 
     private returnValidId(id: any) {
-        return 'sdfvsdfv';
+        return typeof id === 'string' ? id : false;
     }
+
+    private randomId() {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+
 }
 
 export default SchedulingSystem;
