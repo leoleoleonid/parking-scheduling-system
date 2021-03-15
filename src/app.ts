@@ -9,7 +9,6 @@ app.get('/', (req, res) => res.send('Hello World!'));
 
 app.post('/reserve', async (req,res) => {
     const schedulingSystem = await SchedulingSystem.create();
-    console.log(' req.body', req.body);
     const {date, place, duration} = req.body;
     const result = await schedulingSystem.reserve(date, place, duration);
     res.send({result});

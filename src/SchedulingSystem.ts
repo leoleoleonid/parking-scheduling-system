@@ -29,12 +29,9 @@ class SchedulingSystem {
     }
 
     async reserve(date : any, place: any, duration: any = 1) {
-        console.log(date , place, duration);
-
         const isDateValid = this.isDateValid(date);
         const placeValid = this.returnPlaceValid(place);
         const durationValid = this.returnDurationValid(duration);
-        console.log('why&!&!& ', isDateValid ,placeValid ,durationValid)
         if (!isDateValid || !placeValid || !durationValid) {
             return {error: 'you provide incorrect data'};
         }
@@ -119,10 +116,10 @@ class SchedulingSystem {
 
     private isPlaceFree(data:ValidReserveI) {
         // new           -____-
-        //cyrrent -____-
+        //current -____-
 
         // new   -____-
-        //cyrrent       -______-
+        //current       -______-
 
         for (const {date, duration, place} of Object.values(this.schedulingData)) {
             const isPlace = JSON.stringify(place) === JSON.stringify(data.place);
@@ -132,17 +129,14 @@ class SchedulingSystem {
                 const newStart = data.date.getTime();
                 const newEnd = data.date.getTime()  + duration * MINUTE;
 
-                const newStartEarlierThanExistent
-                    = existentStart > newStart;
-                const newFinishEarlierThanExistent
-                    = existentEnd > newEnd;
+                const newFinishEarlierThanExistentStart
+                    = existentStart > newEnd;
 
-                const newStartLaterThanExistent
-                    = existentStart < newStart;
-                const newFinishLaterThanExistent
-                    = existentEnd < newEnd;
-                const isFree = (newStartEarlierThanExistent && newFinishEarlierThanExistent)
-                    || (newStartLaterThanExistent && newFinishLaterThanExistent);
+                const newStartLaterThanExistentFinish
+                    = existentEnd < newStart;
+
+                const isFree = (newFinishEarlierThanExistentStart)
+                    || (newStartLaterThanExistentFinish);
 
                 if (!isFree) {
                     return false;
