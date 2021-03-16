@@ -19,9 +19,6 @@ const argv = yargs.options({
 
 const command: (string|number)[] = argv._;
 
-console.log('command', command);
-console.log('options', argv);
-
 if (!command.length) {
      console.log('not enough input arguments');
      console.log('available commands: [clear, status, reserve]')
@@ -59,9 +56,9 @@ if (command[0] === 'clear') {
             const result = await schedulingSystem.clear(id);
             console.log(result);
             if (result === 'no such id') {
-                process.exit(1)
+                process.exit(1);
             }
-
+            process.exit(0);
         });
     } else {
         (async () => {
@@ -71,6 +68,7 @@ if (command[0] === 'clear') {
             if (result === 'no such id') {
                 process.exit(1)
             }
+            process.exit(0)
         })()
         console.log('id', id);
     }
@@ -91,12 +89,7 @@ if (command[0] === 'reserve') {
             if (typeof result !== "string" ) {
                 process.exit(1)
             }
+            process.exit(0);
         })();
     }
 }
-
-//
-// console.log('args', args);
-// console.log('process.argv.slice(2)!!!!!!!:K:LK:LKK');
-// console.log(process.argv.slice(2));
-// process.exit(1);
