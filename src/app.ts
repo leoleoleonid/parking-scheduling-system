@@ -1,6 +1,6 @@
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import SchedulingSystem from './SchedulingSystem'
+import SchedulingSystem from './SchedulingSystem';
 
 const app = express();
 app.use(bodyParser.json());
@@ -34,4 +34,7 @@ app.get('/status/:dateString', async (req,res) => {
     res.send({result});
 });
 
-export {app};
+const port = 5000;
+app.listen(port, 'localhost', () => {
+    console.log('Server listening on:','http://localhost:'+port);
+});
