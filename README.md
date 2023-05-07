@@ -1,3 +1,22 @@
+Test task description:
+
+Parking scheduling system
+The exercise is to build a simple scheduling engine for a parking lot, which allows reserving park
+spaces via API (command line in this exercise) and REST API.
+The application should read a map of parking spaces from a configuration file and maintain a
+calendar, which will allow reserving the empty spaces.
+1. Design and prepare a configuration file with a list of parking spaces
+2. Write a program that receives events from stdin and reacts accordingly. The commands
+   in CLI - “reserve yyyy-mm-ddThh:mm XYZ m” (for this event the system should return
+   reservation id) and “clear <reservation id>” (should clear the reservation).
+3. Additional supported commands
+   a. status - returns current status (which spaces are available and taken now)
+   b. status yyyy-mm-ddThh:mm - status at given time
+   c. max-time yyyy-mm-ddThh:mm - a maximum duration available for reservation at
+   a given time
+
+4. Design and implement REST API that will allow similar functionality as the CLI.
+
 # parking-scheduling-system
 
 ###To run this project do next in terminal:
